@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pymongo
+pdf2image
+openai
+pydantic
