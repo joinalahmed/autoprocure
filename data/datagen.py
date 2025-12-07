@@ -43,7 +43,7 @@ if not HAS_JAPANESE_FONT:
 # CONFIGURATION
 # ============================================================
 
-NUM_TRANSACTIONS = 30
+NUM_TRANSACTIONS = 5
 OUTPUT_DIR = "simulated_data_lake"
 CHAOS_RATE = 0.5  # 5% of invoices will have issues
 

@@ -4,3 +4,4 @@ pymongo
 pdf2image
 openai
 pydantic
+python-dotenv

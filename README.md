@@ -4,15 +4,51 @@ AutoProcure is an AI-powered procurement document processing and reconciliation 
 
 ## 🌟 Features
 
-- **AI-Powered Document Extraction**: Uses OpenAI GPT-4o to extract structured data from PDF documents
+### Document Processing
+- **AI-Powered Document Extraction**: Uses OpenAI GPT-4o Vision to extract structured data from PDF documents
 - **Multi-Language Support**: Handles documents in English, Japanese, German, Swedish, and more
-- **Three-Way Reconciliation**: Automatically matches POs, Invoices, and GRNs
-- **Approval Workflow**: Built-in approve/reject functionality with comments
-- **Real-Time Analytics**: Dashboard showing document counts, match status, and approval metrics
+- **Document Upload**: Drag-and-drop or browse to upload multiple PDFs simultaneously
+- **Auto-Classification**: Automatically identifies document type (PO, Invoice, or GRN)
+- **Batch Processing**: Upload and process multiple documents at once with progress tracking
+
+### Reconciliation Engine
+- **AI-Powered Reconciliation**: Uses OpenAI GPT-4o with Pydantic structured outputs for intelligent 3-way matching
+- **Zero Hardcoded Rules**: AI analyzes documents and makes intelligent decisions without fixed logic
+- **Type-Safe Validation**: Pydantic models ensure structured, validated responses
+- **Agent-Based Processing**: Background reconciliation agent for high-performance matching
+- **Incremental Updates**: Only processes changed POs for real-time efficiency
+- **Pre-Computed Results**: Instant reconciliation view with MongoDB-stored results
+- **Comprehensive Analysis**: AI checks quantities, prices, descriptions, deliveries, and suspicious patterns
+- **Smart Deductions**: AI calculates recommended payment amounts with itemized deductions
+- **Risk Assessment**: Automatic risk level classification (low/medium/high)
+- **Actionable Recommendations**: AI suggests specific actions to resolve issues
+
+### Approval Workflow
+- **Three-Way Decision**: Approve, Reject, or Dispute reconciliation records
+- **Comment System**: Add notes and explanations for audit trail
+- **Status Tracking**: Real-time visibility of approval status
+- **Auto-Navigation**: Uploaded POs automatically open in reconciliation view
+
+### Search & Filtering
+- **Universal Search**: Search across all document types (POs, Invoices, GRNs)
+- **Smart Filtering**: Search by document number, vendor name, or reference PO
+- **Real-Time Results**: Instant filtering as you type
+- **Context-Aware**: Search placeholder adapts to current view
+
+### Analytics & Reporting
+- **Real-Time Dashboard**: Document counts, match status, and approval metrics
+- **Financial Overview**: Total PO value, invoice amounts, approved/pending payments
+- **Vendor Scoring**: Performance metrics based on delivery and pricing
+- **Outflow Analysis**: Cash flow insights by buyer and time period
+
+### User Interface
+- **Modern Design**: Clean, professional interface built with TailwindCSS
+- **Responsive Layout**: Works on desktop, tablet, and mobile
 - **PDF Viewer**: In-app PDF viewing with modal popup
-- **Responsive UI**: Modern, clean interface built with TailwindCSS
 - **Collapsible Navigation**: Space-saving sidebar with icon-only mode
-- **Vendor Branding**: Logo support for vendors with fallback to branded initials
+- **Vendor Branding**: Colored avatars with vendor initials
+- **Enhanced Details**: Rich document views with vendor info, delivery locations, and inspection status
+- **Multi-Currency Support**: Convert and display amounts in different currencies
 
 ## 📋 Prerequisites
 
@@ -45,6 +81,7 @@ pip install -r requirements.txt
 - `pdf2image` - PDF processing
 - `reportlab` - PDF generation
 - `pydantic` - Data validation
+- `python-dotenv` - Environment variable management
 
 ### 3. Install System Dependencies
 
@@ -128,19 +165,52 @@ This will:
 - Store in MongoDB
 - Move processed files to respective folders (`purchase_orders/`, `invoices/`, `goods_receipts/`)
 
-### 8. Start the Application
+### 8. Run AI-Powered Reconciliation Agent
+
+Generate pre-computed reconciliation results using AI:
+
+```bash
+cd src
+python reconciliation_agent.py
+```
+
+This will:
+- Use OpenAI GPT-4o to analyze all POs, Invoices, and GRNs
+- Perform intelligent 3-way matching with zero hardcoded rules
+- Calculate approval amounts and deductions using AI
+- Assess risk levels and provide recommendations
+- Store structured results in MongoDB for instant retrieval
+- Create indexes for fast queries
+
+**Incremental Mode** (process specific POs only):
+```bash
+python reconciliation_agent.py PO-12345 PO-67890
+```
+
+**Note**: The agent runs automatically in the background when documents are uploaded (incremental mode), but you should run it manually once initially for full reconciliation.
+
+### 9. Start the Application
 
 ```bash
 cd src/app
 uvicorn app:app --host 0.0.0.0 --port 8080 --reload
 ```
 
-### 9. Access the Application
+### 10. Access the Application
 
 Open your browser and navigate to:
 ```
 http://localhost:8080
 ```
+
+### 11. Upload Documents (Optional)
+
+You can upload new documents directly through the UI:
+1. Click the "Upload Document" button in the header
+2. Drag and drop PDF files or click to browse
+3. Select multiple files for batch upload
+4. System automatically extracts data, classifies documents, and runs reconciliation
+5. Uploaded POs automatically open in the reconciliation view
 
 ## 📁 Project Structure
 
@@ -148,21 +218,76 @@ http://localhost:8080
 ema/
 ├── data/
 │   ├── datagen.py                    # PDF generator script
+│   ├── invoices/                     # Processed invoices
+│   ├── purchase_orders/              # Processed POs
+│   ├── goods_receipts/               # Processed GRNs
 │   └── simulated_data_lake/
-│       ├── incoming/                 # Unprocessed PDFs
-│       ├── purchase_orders/          # Processed POs
-│       ├── invoices/                 # Processed Invoices
-│       └── goods_receipts/           # Processed GRNs
+│       └── incoming/                 # Unprocessed PDFs
 ├── src/
 │   ├── app/
-│   │   ├── app.py                    # FastAPI application
+│   │   ├── app.py                    # FastAPI application & API endpoints
 │   │   └── static/
-│   │       ├── index.html            # Main UI
-│   │       └── main.js               # Frontend logic
-│   ├── processor.py                  # Document extraction engine
-│   └── ingest_to_mongo.py           # Ingestion script
+│   │       ├── index.html            # Main UI template
+│   │       └── main.js               # Frontend logic & interactions
+│   ├── processor.py                  # GPT-4o Vision document extraction
+│   ├── ingest_to_mongo.py           # Batch ingestion script
+│   ├── reconciliation_agent.py      # AI-powered reconciliation agent
+│   └── RECONCILIATION_AGENT.md      # Agent documentation
+├── .env                              # Environment variables (create this)
+├── .env.example                      # Environment template
+├── .gitignore                        # Git ignore rules
 ├── requirements.txt                  # Python dependencies
 └── README.md                         # This file
+```
+
+## 🤖 AI-Powered Reconciliation
+
+### Architecture
+
+AutoProcure uses a sophisticated AI-powered reconciliation system:
+
+**Document Extraction:**
+- GPT-4o Vision extracts structured data from PDF documents
+- Handles multi-language documents automatically
+- Classifies document types (PO, Invoice, GRN)
+
+**Reconciliation Analysis:**
+- GPT-4o with Pydantic structured outputs performs 3-way matching
+- Zero hardcoded business rules - AI makes intelligent decisions
+- Analyzes quantities, prices, deliveries, and patterns
+- Calculates deductions and recommended approval amounts
+- Assesses risk levels and provides actionable recommendations
+
+**Technology Stack:**
+- **OpenAI GPT-4o-2024-08-06**: Latest model with structured outputs
+- **Pydantic**: Type-safe validation and schema enforcement
+- **MongoDB**: Stores pre-computed reconciliation results
+- **FastAPI**: High-performance async API
+- **Incremental Processing**: Only reconciles changed documents
+
+### AI Response Structure
+
+```python
+class ReconciliationResult(BaseModel):
+    status: str  # matched, amount_mismatch, etc.
+    issues: List[str]  # Specific problems detected
+    approval_calculation: ApprovalCalculation
+    ai_analysis: AIAnalysis  # Risk, recommendations, actions
+
+class ApprovalCalculation(BaseModel):
+    po_amount: float
+    invoice_amount: float
+    recommended_amount: float
+    total_deductions: float
+    deduction_details: List[str]
+    calculation_notes: List[str]
+
+class AIAnalysis(BaseModel):
+    risk_level: str  # low, medium, high
+    recommendation: str  # approve, reject, investigate, dispute
+    reasoning: str
+    action_items: List[str]
+    estimated_impact: str
 ```
 
 ## 🔧 Configuration
@@ -194,28 +319,101 @@ Edit `src/app/app.py` to customize:
 ### Navigation
 
 - **Reconciliation**: Three-way match dashboard with approval workflow
-- **Purchase Orders**: View all POs
-- **Invoices**: View all invoices
-- **Goods Receipts**: View all GRNs
+- **Purchase Orders**: View and search all POs
+- **Invoices**: View and search all invoices
+- **Goods Receipts**: View and search all GRNs
+- **Vendors**: Vendor performance scores and metrics
+- **Buyers**: Buyer outflow analysis and spending patterns
+
+### Document Upload
+
+1. Click **"Upload Document"** button in the header
+2. **Drag and drop** PDF files or click to browse
+3. Select **single or multiple** files (up to 10MB each)
+4. System automatically:
+   - Extracts data using GPT-4o Vision
+   - Classifies document type (PO, Invoice, or GRN)
+   - Stores in MongoDB
+   - Triggers reconciliation agent
+   - Opens uploaded PO in reconciliation view
+
+### Search & Filter
+
+Available in Reconciliation, Invoices, POs, and GRNs views:
+- **Real-time search** as you type
+- **Smart filtering** by document number, vendor name, or reference PO
+- **Clear button** to reset search
+- **Context-aware** placeholders guide your search
 
 ### Reconciliation Workflow
 
-1. **View Status**: Each PO shows match status (Matched, Amount Mismatch, Missing Invoice/GRN, etc.)
-2. **Review Details**: Click a PO to see full details, line items, and linked documents
-3. **Approve/Reject**: Use action buttons to approve or reject reconciliation
-4. **Add Comments**: Optional comments for audit trail
-5. **Track Decisions**: View approval status in the analytics bar
+1. **View Status**: Each PO shows match status with color-coded badges:
+   - **Matched** (green): All documents present and match
+   - **Amount Mismatch** (amber): Discrepancies in quantities/prices
+   - **Missing Invoice/GRN** (gray): Incomplete document set
+   - **Ghost PO** (red): Invoice references non-existent PO
+
+2. **Review AI Analysis**: Click a PO to see comprehensive AI-powered insights:
+   - **AI Analysis Card**: Purple gradient card with intelligent recommendations
+   - **Risk Level**: Low/Medium/High with color-coded badge
+   - **Recommendation**: Approve/Reject/Investigate/Dispute
+   - **Reasoning**: Clear explanation of AI's decision
+   - **Action Items**: 2-3 specific steps to take
+   - **Estimated Impact**: Financial implications
+   - Full PO details with vendor and buyer information
+   - Line items with quantities and prices
+   - Linked invoices and GRNs
+   - AI-detected issues and discrepancies
+   - Smart approval calculation with itemized deductions
+
+3. **Make Decision**: Three options available:
+   - **Approve** (green): Accept reconciliation and approve payment
+   - **Dispute** (orange): Flag for investigation or vendor discussion
+   - **Reject** (red): Reject payment due to issues
+
+4. **Add Comments**: Optional comments for audit trail and team communication
+
+5. **Track Decisions**: View approval status in:
+   - List view badges (Approved/Rejected/Dispute/Pending)
+   - Analytics bar showing counts
+   - Financial overview showing approved/pending amounts
 
 ### Analytics Dashboard
 
-The top analytics bar shows:
+The header shows real-time metrics:
 - **Documents**: Total count of POs, Invoices, and GRNs
-- **Status**: Number of matched vs. issues
-- **Decisions**: Approved, Rejected, and Pending counts
+- **Status**: Matched vs. Issues
+- **Decisions**: Approved, Rejected, Pending counts
+- **Financial**: PO value, Invoice amounts, Approved/Pending payments
+
+### Enhanced Document Views
+
+**Invoices:**
+- Vendor avatar and contact info
+- Bill To address
+- Line items with pricing
+- Tax breakdown
+- Original currency display
+- Notes section
+
+**Goods Receipts:**
+- Vendor avatar and delivery info
+- Delivery location
+- Inspection status summary
+- Rejected items alert (if any)
+- Receiver signature
+- Delivery notes
+
+**Purchase Orders:**
+- Vendor details
+- Ship To address
+- Line items table
+- Total amount breakdown
+- PDF viewer
 
 ### PDF Viewing
 
-Click "View PDF" on any document to open it in a modal viewer without leaving the page.
+Click **"View PDF"** on any document to open it in a modal viewer without leaving the page.
 
 ## 🔍 Troubleshooting
 
@@ -344,10 +542,33 @@ Edit `src/app/app.py` in the `/api/reconciliation` endpoint:
 {
   "_id": ObjectId,
   "po_number": "PO-12345",
-  "decision": "approved",
+  "decision": "approved",  // or "rejected" or "dispute"
   "comment": "All documents match",
-  "timestamp": "2024-12-06T01:00:00Z",
+  "timestamp": "2024-12-07T01:00:00Z",
   "user": "JA"
+}
+```
+
+#### `reconciliation_results`
+Pre-computed reconciliation data for fast retrieval:
+```json
+{
+  "_id": ObjectId,
+  "po_number": "PO-12345",
+  "po": { /* full PO document */ },
+  "invoices": [ /* array of linked invoices */ ],
+  "goods_receipts": [ /* array of linked GRNs */ ],
+  "status": "matched",  // or "amount_mismatch", "missing_invoice", etc.
+  "issues": [ /* array of detected issues */ ],
+  "decision": { /* decision info if exists */ },
+  "approval_calculation": {
+    "po_amount": 1000.00,
+    "invoice_amount": 1000.00,
+    "recommended_amount": 950.00,
+    "total_deductions": 50.00,
+    "deduction_details": [ /* itemized deductions */ ]
+  },
+  "reconciled_at": "2024-12-07T06:00:00Z"
 }
 ```
 
@@ -419,11 +640,13 @@ For issues and questions:
 
 ## 🙏 Acknowledgments
 
-- OpenAI for GPT-4o API
-- FastAPI for the excellent web framework
-- ReportLab for PDF generation
-- TailwindCSS for UI styling
+- **OpenAI** for GPT-4o Vision and GPT-4o with structured outputs
+- **Pydantic** for type-safe data validation
+- **FastAPI** for the excellent async web framework
+- **MongoDB** for flexible document storage
+- **ReportLab** for PDF generation
+- **TailwindCSS** for beautiful UI styling
 
 ---
 
-**Built with ❤️ for modern procurement teams**
+**Built with ❤️ and AI for modern procurement teams**

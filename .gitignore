@@ -40,3 +40,6 @@ Thumbs.db
 # Project specific
 tmp_pdf_images/
 output/
+
+# Environment variables
+.env
