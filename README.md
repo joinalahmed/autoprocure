@@ -237,8 +237,11 @@ ema/
 ├── .env.example                      # Environment template
 ├── .gitignore                        # Git ignore rules
 ├── requirements.txt                  # Python dependencies
+├── ARCHITECTURE.md                   # System architecture documentation
 └── README.md                         # This file
 ```
+
+> 📖 **For detailed system architecture, data flow, and technical design, see [ARCHITECTURE.md](ARCHITECTURE.md)**
 
 ## 🤖 AI-Powered Reconciliation
 
